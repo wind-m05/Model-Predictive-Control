@@ -1,0 +1,12 @@
+clear all, close all, clc
+% First order model
+A = 0;
+B = 1;
+C = 1;
+Ts = 0.1;
+sys_c = ss(A,B,C,0);
+sys_d = c2d(sys_c,Ts);
+Q = 1;
+R = 1;
+[K,S,e] = dlqr(sys_d.A,sys_d.B,Q,R);
+sys_cl = ss(A-)
