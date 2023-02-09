@@ -1,17 +1,24 @@
 function [phi,gamma] = phi_gam_predict(A,B,N)
-phi = zeros(N,1);
-gamma = ones(N,N);
-gamma = tril(gamma)*B;
-for i = 1:N
-phi(i) = A^N;
-end
+phi = cell(N,1);
+gamma = cell(N,N);
 
-for i = 1:N
-    for j = 1:N
-        gamma(i,j) = A^(i-1) * gamma(i,j);
+zero_vec = zeros(size(B));
+for j = 1:N
+    for i = 1:N
+        if i == j
+        gamma{i,j} = B;
+        elseif i > j
+        gamma{i,j} = A^((i-1)-(j-1)) * B;
+        else
+        gamma{i,j} = zero_vec;
+        end
     end
 end
 
-
+for i = 1:N
+phi{i} = A^N;
+end
+phi = cell2mat(phi);
+gamma = cell2mat(gamma);
 end
 
