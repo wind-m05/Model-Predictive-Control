@@ -16,9 +16,15 @@ for j = 1:N
 end
 
 for i = 1:N
-phi{i} = A^N;
+phi{i} = A^i;
 end
 phi = cell2mat(phi);
 gamma = cell2mat(gamma);
+% test1 = eig(phi);
+% test2 = eig(gamma);
+% if test1<=0 && test2<=0
+%     error('Be careful phi and gamma are both negative semi definite')
+% end
+
 end
 
