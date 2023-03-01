@@ -2,8 +2,8 @@ clear all, close all, clc
 % Simulation parameters
 t = 0:1:1500; 
 x0 = [3;1];
-const.lb = -0.1; % Lower bound on actuator input 
-const.ub = 0.1; % Upper bound on actuator input
+const.lb = -1; % Lower bound on actuator input 
+const.ub = 1; % Upper bound on actuator input
 Ts = 0.1;
 N = 5;
 
@@ -51,9 +51,3 @@ stem(t_mpc,y_mpc(1,:))
 stem(t_mpc,y_mpc(2,:))
 legend('lqr y1','lqr y2','mpc y1','mpc y2')
 title('Response')
-
-% figure()
-% stem(t_lqr(2:end),u_lqr)
-% hold on
-% stem(t_lqr,y_lqr(1,:))
-% stem(t_lqr,y_lqr(2,:))

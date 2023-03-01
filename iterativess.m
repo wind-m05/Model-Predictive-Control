@@ -8,9 +8,8 @@ for i = 1:length(t)-1
     x{i+1} = sys.A*x{i}+sys.B*u;
     y{i+1} = sys.C*x{i+1};
 end
-
-y= cell2mat(y);
-x= cell2mat(x);
+y = cell2mat(y);
+x = cell2mat(x);
 uhist = cell2mat(uhist);
 end
 
