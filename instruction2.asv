@@ -1,6 +1,12 @@
 clear all, close all, clc
 %% 2.1 a)
+t = 0:1:1500; 
+x0 = [3;1];
+const.lb = -1; % Lower bound on actuator input 
+const.ub = 1; % Upper bound on actuator input
 Ts = 1;
+N = 5;
+
 % Model
 [A,B,C,D] = modelselect('car1d');
 sys_c = ss(A,B,C,D);
@@ -17,13 +23,18 @@ A = [];
 b = [];
 Aeq = [];
 beq = [];
-lb = -1;
-ub = 1;
+lb = [];
+ub = [];
 x0 = [];
 x = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,[])
 
 %% 2.1 b)
+t = 0:1:1500; 
+x0 = [3;1];
+const.lb = -1; % Lower bound on actuator input 
+const.ub = 1; % Upper bound on actuator input
 Ts = 1;
+N = 5;
 
 % Model
 [A,B,C,D] = modelselect('car2d');
@@ -35,14 +46,14 @@ Cd = sys_d.C;
 
 %% Optimization
 options = optimoptions('quadprog','Display','iter');
-H = 2.25;
-f = 9;
+H = 2;
+f = 5;
 A = [];
 b = [];
 Aeq = [];
 beq = [];
-lb = -1;
-ub = 1;
+lb = [];
+ub = [];
 x0 = [];
 x = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,[])
 
