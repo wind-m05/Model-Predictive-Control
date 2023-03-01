@@ -1,9 +1,9 @@
 clear all, close all, clc
 % Simulation parameters
-t = 0:1:150; 
+t = 0:1:1500; 
 x0 = [3;1];
-const.lb = -1; % Lower bound on actuator input 
-const.ub = 1; % Upper bound on actuator input
+const.lb = -0.1; % Lower bound on actuator input 
+const.ub = 0.1; % Upper bound on actuator input
 Ts = 0.1;
 N = 5;
 
@@ -26,13 +26,13 @@ P = idare(Ad,Bd,Q,R,[],[]);
 [omega,psi] = get_omega_psi(Q,P,R,N);
 G = 2*(psi+(gamma'*omega*gamma));
 F = 2*gamma'*omega*phi;
-M = zeros(length(A),N);
-M(1:length(B),1:length(B)) = eye(length(B));
-Kmpc = M*inv(G)*F;
+M = zeros(size(B,2),N);
+M(1:size(B,2),1:size(B,2)) = eye(size(B,2 ));
+Kmpc = M*inv(G)*F; 
 
 % Solve state space iteratively
 [y_lqr,x_lqr,t_lqr,u_lqr] = iterativess(sys_d,Klqr,x0,t,const);
-[y_mpc,x_mpc,t_mpc,u_mpc] = iterativess(sys_d,Klqr,x0,t,const);
+[y_mpc,x_mpc,t_mpc,u_mpc] = iterativess(sys_d,Kmpc,x0,t,const);
 
 %% Plotting
 
@@ -52,3 +52,8 @@ stem(t_mpc,y_mpc(2,:))
 legend('lqr y1','lqr y2','mpc y1','mpc y2')
 title('Response')
 
+% figure()
+% stem(t_lqr(2:end),u_lqr)
+% hold on
+% stem(t_lqr,y_lqr(1,:))
+% stem(t_lqr,y_lqr(2,:))

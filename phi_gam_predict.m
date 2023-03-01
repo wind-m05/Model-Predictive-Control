@@ -2,7 +2,7 @@ function [phi,gamma] = phi_gam_predict(A,B,N)
 phi = cell(N,1);
 gamma = cell(N,N);
 
-zero_vec = zeros(size(B));
+zero_vec = zeros(size(A*B));
 for j = 1:N
     for i = 1:N
         if i == j
@@ -20,6 +20,7 @@ phi{i} = A^i;
 end
 phi = cell2mat(phi);
 gamma = cell2mat(gamma);
+
 % test1 = eig(phi);
 % test2 = eig(gamma);
 % if test1<=0 && test2<=0
