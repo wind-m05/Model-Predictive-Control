@@ -45,5 +45,3 @@ lb = -1;
 ub = 1;
 x0 = [];
 x = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,[])
-
-

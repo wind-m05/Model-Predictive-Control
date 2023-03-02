@@ -1,0 +1,14 @@
+function [D,M,E] = DME_constraints(constr,N,Bd)
+%DME_CONSTRAINTS Summary of this function goes here
+%   Detailed explanation goes here
+numstates = size(Bd,1);
+numinputs = size(Bd,2);
+% m = cell()
+ m{1:2} = eye(numinputs)   
+   
+
+        e = 
+        D = 
+        M = 
+        E = 
+end
