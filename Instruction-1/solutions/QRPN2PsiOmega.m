@@ -1,4 +1,4 @@
-function [ Omega, Psi ] = QRPN2PsiOmega( Q,R,P,N )
+function [ Psi, Omega ] = QRPN2PsiOmega( Q,R,P,N )
 %QPN2PSIOMEGA Summary of this function goes here
 %   Detailed explanation goes here
 

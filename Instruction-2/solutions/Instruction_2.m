@@ -59,8 +59,8 @@ K_lqr = -K; % In this lecture, we use the form u(k)=+Kx(k)
 
 % Compact formulation
 N = 100;
-[Phi, Gamma] = phi_gam_predict(A,B,N);
-[Psi, Omega] = get_omega_psi(Q,R,P,N);
+[Phi, Gamma] = ABN2PhiGamma(A,B,N);
+[Psi, Omega] = QRPN2PsiOmega(Q,R,P,N);
 G = 2*(Psi+Gamma'*Omega*Gamma);
 F = 2*Gamma'*Omega*Phi;
 
@@ -73,10 +73,10 @@ k_sim = 500;
 xk = [x0 zeros(nx,k_sim)];
 uk = zeros(nu,k_sim);
 Uk = zeros(nu*N,k_sim);
-opt =  optimoptions('quadprog','Display','off');
-warning('off','optim:quadprog:HessianNotSym')
+% opt =  optimoptions('quadprog','Display','off');
+% warning('off','optim:quadprog:HessianNotSym')
 for k = 1:k_sim
-    [U,~,exitflag] = quadprog(G,F*xk(:,k),L,c+W*xk(:,k),[],[],[],[],[],opt);
+    [U,~,exitflag] = quadprog(G,F*xk(:,k),L,c+W*xk(:,k),[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
         if exitflag == -2
