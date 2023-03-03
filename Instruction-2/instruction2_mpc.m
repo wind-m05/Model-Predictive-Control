@@ -1,29 +1,28 @@
 clear all, close all, clc
 
+% Simulation parameters
+t = 500; 
+Ts = 0.1;
+N = 100; 
+x0 = [3;1];
+
 % Predicted states bounds
 constr.statelb = [-10;-10]; 
 constr.stateub =  [10;10];
-% Current state bound 
-constr.initialstatelb = [-0.5;-0.5];
-constr.initialstateub = [0.5;0.5];
-% Terminal state bound
+constr.initialstatelb = -abs(x0);
+constr.initialstateub = abs(x0);
 constr.terminalstatelb = [-3;-3];
 constr.terminalstateub = [3;3];
-% Input bounds
 constr.inputlb = -0.1;
 constr.inputub =  0.1;
-
-% Simulation parameters
-t = 500; % total time (discrete)
-Ts = 0.1;
-N = 100; % prediction horizon
-x0 = [3;1];
 
 % Model
 [A,B,C,D,sys] = modelselect('car2d','discrete',Ts);
 [nx,nu] = size(B);
 Q = 1*eye(nx);
 R = 1*eye(nu);
+% [x0,constr,Q,R] = defaulttest(nx,nu);
+
 
 % Checks
 ctrb_M = ctrb(A,B);
@@ -69,12 +68,13 @@ for k = 1:t
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
 end
 
-figure
+figure()
 subplot(1,2,1);
 stairs(0:t,xk')
 xlabel('$k$','Interpreter','latex');
 ylabel('$x$','Interpreter','latex');
 xlim([0 t]);
+title('Trajectory of states in time')
 
 subplot(1,2,2);
 stairs(0:t-1,uk)
@@ -82,20 +82,21 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$u$','Interpreter','latex');
 xlim([0 t]);
 ylim([constr.inputlb-0.1 constr.inputub+0.1]);
+title('Inputs in time')
 sgtitle('Constrained MPC')
 
-% (d) Comparison with open loop predicted trajecotry
-% figure
-% hold on
-% for k = 1:t
-%     stairs(k-1:k+N-2,Uk(:,k))
-% end
-% stairs(0:t-1,uk,'k')
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$u$','Interpreter','latex');
-% xlim([0 t]);
-% ylim([constr.inputlb-0.1 constr.inputub+0.1]);
-% title('Open loop predicted trajecotry of input')
+% Comparison with open loop predicted trajecotry
+figure()
+for k = 1:t
+    stairs(k-1:k+N-2,Uk(:,k)) 
+    hold on
+end
+stairs(0:t-1,uk,'k') % MPC control sequence 
+xlabel('$k$','Interpreter','latex');
+ylabel('$u$','Interpreter','latex');
+xlim([0 t]);
+ylim([constr.inputlb-0.1 constr.inputub+0.1]);
+title('Open loop predicted trajecotry of input')
 
 % (e) Comparison with saturated unconstrained MPC
 % K_mpc = -[eye(nu) zeros(nu,N-1)]*G^-1*F;
