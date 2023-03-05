@@ -7,6 +7,7 @@ N = 4;
 x0 = [10;-2.2541;-2.23*10^(-17);-0.2912];
 u0 = [0.3792;
       0.0203];
+y0 = [10;0];
 % Reference
 ref = zeros(2,length(t));
 ref(1,1:200) = 10;
@@ -22,7 +23,7 @@ ref(2,101:end) = 5;
 % ylabel('References')
 % legend('speed v','climb rate h')
 
-%% Predicted states bounds
+% Predicted states bounds
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
 constr.stateub =  [25;25;pi/20;pi/2;15]; % v,w,q,theta,h
 constr.initialstatelb = -abs([x0; 0]); % v,w,q,theta,h
@@ -37,7 +38,8 @@ constr.deltainputub =  [15;15];
 % Model
 [A,B,C,D,sys] = modelselect('aircraft','discrete',Ts);
 [nx,nu] = size(B);
-Q = 10*eye(2);
+ny = 2;
+Q = 10*eye(ny);
 R = 0.1*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
@@ -65,18 +67,17 @@ F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
 
-v = [u0;zeros(2*(N-1),1)];
-c = c+S*v; % update c to new constraints
+
 % Update cost function here too !
 
 %quadprog
 xk = [x0 zeros(nx,t)];
-uk = zeros(nu,t);
-tk = zeros(1,t);
+yk = [y0 zeros(ny,t)];
+uk = [u0 zeros(nu,t)];
+v = [u0 ; zeros(2*(N-1),1)];
+c = c+S*v; % update c to new constraints
 for k = 1:t
-    tic;
     [Uk,fval,exitflag] = quadprog(G,F*xk(:,k),L,c+W*xk(:,k),[],[],[],[],[],[]);
-    tk(k) = toc;
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
         if exitflag == -2
@@ -85,28 +86,79 @@ for k = 1:t
     end
     uk(:,k) = Uk(1:nu);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+    yk(:,k+1) = C*xk(:,k);
+    v = [uk(:,k) ; zeros(2*(N-1),1)];
+    c = c+S*v; % update c to new constraints
+    % Update cost function as well ???
 end
- 
 
-% % 2. mpcActiveSetSolver
-% xk = [x0 zeros(nx,t)];
-% uk = zeros(nu,t);
-% tk = zeros(1,t);
-% Aeq = zeros(0,length(F));
-% beq = zeros(0,1);
-% [L_G,p] = chol((G+G')/2,'lower');
-% Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
-% opt = mpcActiveSetOptions;
-% opt.UseHessianAsInput = false;
-% iA0 = false(size(c));
-% for k = 1:t
-%     tic
-%     [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,F*xk(:,k),L,c+W*xk(:,k),Aeq,beq,iA0,opt);
-%     tk(k) = toc;
-%     uk(:,k) = Uk(1:nu);
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-% end
-% stairs(0:t-1,tk)
-% legend('quadprog','mpcActiveSetSolver')
+figure()
+subplot(1,2,1)
+stairs(0:t,yk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,yk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$h [ft/sec]$','Interpreter','latex');
+sgtitle('Outputs')
+
+figure()
+subplot(1,2,1)
+stairs(0:t,uk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$e$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,uk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\tau$','Interpreter','latex');
+sgtitle('Inputs')
+
+%% mpcActiveSetSolver
+xk = [x0 zeros(nx,t)];
+yk = [y0 zeros(ny,t)];
+uk = [u0 zeros(nu,t)];
+Aeq = zeros(0,length(F));
+beq = zeros(0,1);
+[L_G,p] = chol((G+G')/2,'lower');
+Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
+opt = mpcActiveSetOptions;
+opt.UseHessianAsInput = false;
+iA0 = false(size(c));
+for k = 1:t
+    [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,F*xk(:,k),L,c+W*xk(:,k),Aeq,beq,iA0,opt);
+    uk(:,k) = Uk(1:nu);
+    xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+    yk(:,k+1) = C*xk(:,k);
+    v = [uk(:,k) ; zeros(2*(N-1),1)];
+    c = c+S*v; % update c to new constraints
+    %     % Update cost function as well ???
+end
+
+figure()
+subplot(1,2,1)
+stairs(0:t,yk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,yk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$h [ft/sec]$','Interpreter','latex');
+sgtitle('Outputs')
+
+figure()
+subplot(1,2,1)
+stairs(0:t,uk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$e$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,uk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\tau$','Interpreter','latex');
+sgtitle('Inputs')
 
 
