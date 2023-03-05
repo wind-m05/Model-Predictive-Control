@@ -1,13 +1,13 @@
 clear all, close all, clc
-
 %% Simulation parameters
 t = 300; 
 Ts = 0.1;
-N = 4; 
+N = 20; 
 x0 = [10;-2.2541;-2.23*10^(-17);-0.2912];
 u0 = [0.3792;
       0.0203];
 y0 = [10;0];
+
 % Reference
 ref = zeros(2,length(t));
 ref(1,1:200) = 10;
@@ -66,11 +66,7 @@ G = 2*(T'*psi*T+gamma'*C_bar'*omega*C_bar*gamma); % From Jelle
 F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
-
-
-% Update cost function here too !
-
-%quadprog
+%% quadprog
 xk = [x0 zeros(nx,t)];
 yk = [y0 zeros(ny,t)];
 uk = [u0 zeros(nu,t)];
