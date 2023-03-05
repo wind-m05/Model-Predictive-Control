@@ -37,7 +37,7 @@ constr.deltainputub =  [15;15];
 % Model
 [A,B,C,D,sys] = modelselect('aircraft','discrete',Ts);
 [nx,nu] = size(B);
-Q = 10*eye(nx);
+Q = 10*eye(2);
 R = 0.1*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
@@ -50,8 +50,6 @@ if length(x0) ~= length(A)
 error('length of initial conditions must be the same as A')
 elseif rank(ctrb_M) ~= length(A)
 error('Problem is uncontrollable') 
-elseif length(Q) ~= nx
-error('Q matrix must be same size as number of states') 
 elseif length(R) ~= nu
 error('R matrix must be same size as number of inputs')
 end
@@ -60,8 +58,10 @@ end
 % exercise...
 [phi,gamma] = phi_gam_predict(A,B,N);
 [omega,psi] = get_omega_psi(Q,Q,R,N); % If we have a P change second Q into P
-G = 2*(psi+(gamma'*omega*gamma)); % From Jelle
-F = 2*gamma'*omega*phi;
+Cc = repmat({C}, 1, N);  
+C_bar = blkdiag(Cc{:});
+G = 2*(T'*psi*T+gamma'*C_bar'*omega*C_bar*gamma); % From Jelle
+F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
 
