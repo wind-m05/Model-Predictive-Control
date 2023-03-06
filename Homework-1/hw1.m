@@ -9,19 +9,13 @@ u0 = [0.3792;
 y0 = [10;0];
 
 % Reference
-ref = zeros(2,length(t));
+
+ref = zeros(2,t);
 ref(1,1:200) = 10;
 ref(1,201:end) = 8;
 ref(2,1:100) = 0;
 ref(2,101:end) = 5;
-% Plotting
-% stairs(t,ref(1,:))
-% hold on
-% stairs(t,ref(2,:))
-% grid on
-% xlabel('Time step [k]')
-% ylabel('References')
-% legend('speed v','climb rate h')
+ref = reshape(ref,2*t,1);
 
 % Predicted states bounds
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
@@ -62,18 +56,22 @@ end
 [omega,psi] = get_omega_psi(Q,Q,R,N); % If we have a P change second Q into P
 Cc = repmat({C}, 1, N);  
 C_bar = blkdiag(Cc{:});
-G = 2*(T'*psi*T+gamma'*C_bar'*omega*C_bar*gamma); % From Jelle
-F = 2*gamma'*C_bar'*omega*C_bar*phi;
+% G = 2*(T'*psi*T+gamma'*C_bar'*omega*C_bar*gamma); % From Jelle
+% F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
 %% quadprog
 xk = [x0 zeros(nx,t)];
 yk = [y0 zeros(ny,t)];
-uk = [u0 zeros(nu,t)];
+uk = [zeros(size(u0)),u0,zeros(nu,t-1)];
+xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
+yk(:,2) = C*xk(:,1);
 v = [u0 ; zeros(2*(N-1),1)];
+H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*ref-2*T'*psi*v);
 c = c+S*v; % update c to new constraints
-for k = 1:t
-    [Uk,fval,exitflag] = quadprog(G,F*xk(:,k),L,c+W*xk(:,k),[],[],[],[],[],[]);
+for k = 2:t
+    [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
         if exitflag == -2
@@ -87,74 +85,74 @@ for k = 1:t
     c = c+S*v; % update c to new constraints
     % Update cost function as well ???
 end
-
-figure()
-subplot(1,2,1)
-stairs(0:t,yk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$v [ft/sec]$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,yk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$h [ft/sec]$','Interpreter','latex');
-sgtitle('Outputs')
-
-figure()
-subplot(1,2,1)
-stairs(0:t,uk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$e$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,uk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$\tau$','Interpreter','latex');
-sgtitle('Inputs')
-
-%% mpcActiveSetSolver
-xk = [x0 zeros(nx,t)];
-yk = [y0 zeros(ny,t)];
-uk = [u0 zeros(nu,t)];
-Aeq = zeros(0,length(F));
-beq = zeros(0,1);
-[L_G,p] = chol((G+G')/2,'lower');
-Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
-opt = mpcActiveSetOptions;
-opt.UseHessianAsInput = false;
-iA0 = false(size(c));
-for k = 1:t
-    [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,F*xk(:,k),L,c+W*xk(:,k),Aeq,beq,iA0,opt);
-    uk(:,k) = Uk(1:nu);
-    xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-    yk(:,k+1) = C*xk(:,k);
-    v = [uk(:,k) ; zeros(2*(N-1),1)];
-    c = c+S*v; % update c to new constraints
-    %     % Update cost function as well ???
-end
-
-figure()
-subplot(1,2,1)
-stairs(0:t,yk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$v [ft/sec]$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,yk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$h [ft/sec]$','Interpreter','latex');
-sgtitle('Outputs')
-
-figure()
-subplot(1,2,1)
-stairs(0:t,uk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$e$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,uk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$\tau$','Interpreter','latex');
-sgtitle('Inputs')
+% 
+% figure()
+% subplot(1,2,1)
+% stairs(0:t,yk(1,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$v [ft/sec]$','Interpreter','latex');
+% 
+% subplot(1,2,2)
+% stairs(0:t,yk(2,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$h [ft/sec]$','Interpreter','latex');
+% sgtitle('Outputs')
+% 
+% figure()
+% subplot(1,2,1)
+% stairs(0:t,uk(1,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$e$','Interpreter','latex');
+% 
+% subplot(1,2,2)
+% stairs(0:t,uk(2,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$\tau$','Interpreter','latex');
+% sgtitle('Inputs')
+% 
+% %% mpcActiveSetSolver
+% xk = [x0 zeros(nx,t)];
+% yk = [y0 zeros(ny,t)];
+% uk = [u0 zeros(nu,t)];
+% Aeq = zeros(0,length(F));
+% beq = zeros(0,1);
+% [L_G,p] = chol((G+G')/2,'lower');
+% Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
+% opt = mpcActiveSetOptions;
+% opt.UseHessianAsInput = false;
+% iA0 = false(size(c));
+% for k = 1:t
+%     [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,F*xk(:,k),L,c+W*xk(:,k),Aeq,beq,iA0,opt);
+%     uk(:,k) = Uk(1:nu);
+%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     yk(:,k+1) = C*xk(:,k);
+%     v = [uk(:,k) ; zeros(2*(N-1),1)];
+%     c = c+S*v; % update c to new constraints
+%     %     % Update cost function as well ???
+% end
+% 
+% figure()
+% subplot(1,2,1)
+% stairs(0:t,yk(1,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$v [ft/sec]$','Interpreter','latex');
+% 
+% subplot(1,2,2)
+% stairs(0:t,yk(2,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$h [ft/sec]$','Interpreter','latex');
+% sgtitle('Outputs')
+% 
+% figure()
+% subplot(1,2,1)
+% stairs(0:t,uk(1,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$e$','Interpreter','latex');
+% 
+% subplot(1,2,2)
+% stairs(0:t,uk(2,:))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$\tau$','Interpreter','latex');
+% sgtitle('Inputs')
 
 
