@@ -55,8 +55,6 @@ end
 [omega,psi] = get_omega_psi(Q,Q,R,N); % If we have a P change second Q into P
 Cc = repmat({C}, 1, N);  
 C_bar = blkdiag(Cc{:});
-% G = 2*(T'*psi*T+gamma'*C_bar'*omega*C_bar*gamma); % From Jelle
-% F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
 
@@ -68,10 +66,11 @@ xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
 yk(:,2) = C*xk(:,1);
 v = [u0 ; zeros(2*(N-1),1)];
 G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-F = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-T'*psi*v);
+F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*ref(1:2*N)-T'*psi*v);
 M = zeros(size(B,2),2*N);
-M(1:size(B,2),1:size(B,2)) = eye(size(B,2 ));
-for k = 2:t
+M(1:size(B,2),1:size(B,2)) = eye(size(B,2));
+
+for k = 1:t
     uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*ref(k:(k-1)+(2*N))-T'*psi*v); 
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
