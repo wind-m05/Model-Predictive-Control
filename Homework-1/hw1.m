@@ -10,12 +10,12 @@ y0 = [10;0];
 
 % Reference
 
-ref = zeros(2,t);
+ref = zeros(2,t+N);
 ref(1,1:200) = 10;
 ref(1,201:end) = 8;
 ref(2,1:100) = 0;
 ref(2,101:end) = 5;
-ref = reshape(ref,2*t,1);
+ref = reshape(ref,2*(t+N),1);
 
 % Predicted states bounds
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
@@ -59,32 +59,51 @@ C_bar = blkdiag(Cc{:});
 % F = 2*gamma'*C_bar'*omega*C_bar*phi;
 [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T);
 
-%% quadprog
+
+%% Unconstrained
 xk = [x0 zeros(nx,t)];
 yk = [y0 zeros(ny,t)];
 uk = [zeros(size(u0)),u0,zeros(nu,t-1)];
 xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
 yk(:,2) = C*xk(:,1);
 v = [u0 ; zeros(2*(N-1),1)];
-H = (gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
-c = c+S*v; % update c to new constraints
+G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+F = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-T'*psi*v);
+M = zeros(size(B,2),2*N);
+M(1:size(B,2),1:size(B,2)) = eye(size(B,2 ));
 for k = 2:t
-    [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
-    if exitflag ~= 1
-        warning('exitflag quadprog = %d\n', exitflag)
-        if exitflag == -2
-            sprintf('Optimization problem is infeasible.')
-        end
-    end
-    uk(:,k) = Uk(1:nu);
+    uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*ref(k:(k-1)+(2*N))-T'*psi*v); 
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
     v = [uk(:,k) ; zeros(2*(N-1),1)];
-    c = c+S*v; 
-    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
 end
-% 
+
+% %% quadprog
+% xk = [x0 zeros(nx,t)];
+% yk = [y0 zeros(ny,t)];
+% uk = [zeros(size(u0)),u0,zeros(nu,t-1)];
+% xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
+% yk(:,2) = C*xk(:,1);
+% v = [u0 ; zeros(2*(N-1),1)];
+% H = (gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
+% c = c+S*v; % update c to new constraints
+% for k = 2:t
+%     [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
+%     if exitflag ~= 1
+%         warning('exitflag quadprog = %d\n', exitflag)
+%         if exitflag == -2
+%             sprintf('Optimization problem is infeasible.')
+%         end
+%     end
+%     uk(:,k) = Uk(1:nu);
+%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     yk(:,k+1) = C*xk(:,k);
+%     v = [uk(:,k) ; zeros(2*(N-1),1)];
+%     c = c+S*v; 
+%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(k:(k-1)+(2*N))-2*T'*psi*v);
+% end
+
 figure()
 subplot(1,2,1)
 stairs(0:t,yk(1,:))
@@ -109,18 +128,18 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$\tau$','Interpreter','latex');
 sgtitle('Inputs')
 
-ref = reshape(ref,[2,t]);
+ref = reshape(ref,[2,t+N]);
 figure()
 subplot(1,2,1)
-stairs(0:t-1,ref(1,:)')
+stairs(0:t-1+N,ref(1,:)')
 xlabel('$k$','Interpreter','latex');
 ylabel('$v ref$','Interpreter','latex');
 
 subplot(1,2,2)
-stairs(0:t-1,ref(2,:)')
+stairs(0:t-1+N,ref(2,:)')
 xlabel('$k$','Interpreter','latex');
 ylabel('$h ref$','Interpreter','latex');
-sgtitle('Inputs')
+sgtitle('reference')
 
 
  
