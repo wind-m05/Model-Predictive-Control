@@ -38,7 +38,6 @@ R = 0.1*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
 T(2:n+1:end) = -1;
-% [x0,constr,Q,R] = defaulttest(nx,nu);
 
 %% Checks
 ctrb_M = ctrb(A,B);
@@ -67,8 +66,8 @@ uk = [zeros(size(u0)),u0,zeros(nu,t-1)];
 xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
 yk(:,2) = C*xk(:,1);
 v = [u0 ; zeros(2*(N-1),1)];
-H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*ref-2*T'*psi*v);
+H = (gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
 c = c+S*v; % update c to new constraints
 for k = 2:t
     [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
@@ -82,53 +81,76 @@ for k = 2:t
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
     v = [uk(:,k) ; zeros(2*(N-1),1)];
-    c = c+S*v; % update c to new constraints
-    % Update cost function as well ???
+    c = c+S*v; 
+    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
 end
 % 
-% figure()
-% subplot(1,2,1)
-% stairs(0:t,yk(1,:))
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$v [ft/sec]$','Interpreter','latex');
-% 
-% subplot(1,2,2)
-% stairs(0:t,yk(2,:))
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$h [ft/sec]$','Interpreter','latex');
-% sgtitle('Outputs')
-% 
-% figure()
-% subplot(1,2,1)
-% stairs(0:t,uk(1,:))
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$e$','Interpreter','latex');
-% 
-% subplot(1,2,2)
-% stairs(0:t,uk(2,:))
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$\tau$','Interpreter','latex');
-% sgtitle('Inputs')
-% 
+figure()
+subplot(1,2,1)
+stairs(0:t,yk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,yk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$h [ft/sec]$','Interpreter','latex');
+sgtitle('Outputs')
+
+figure()
+subplot(1,2,1)
+stairs(0:t,uk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$e$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,uk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\tau$','Interpreter','latex');
+sgtitle('Inputs')
+
+ref = reshape(ref,[2,t]);
+figure()
+subplot(1,2,1)
+stairs(0:t-1,ref(1,:)')
+xlabel('$k$','Interpreter','latex');
+ylabel('$v ref$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t-1,ref(2,:)')
+xlabel('$k$','Interpreter','latex');
+ylabel('$h ref$','Interpreter','latex');
+sgtitle('Inputs')
+
+
+ 
 % %% mpcActiveSetSolver
 % xk = [x0 zeros(nx,t)];
 % yk = [y0 zeros(ny,t)];
-% uk = [u0 zeros(nu,t)];
-% Aeq = zeros(0,length(F));
+% uk = [zeros(size(u0)),u0,zeros(nu,t-1)];
+% xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
+% yk(:,2) = C*xk(:,1);
+% v = [u0 ; zeros(2*(N-1),1)];
+% H = (gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
+% c = c+S*v; % update c to new constraints
+% G = H;
+% c = c+S*v; % update c to new constraints
+% Aeq = zeros(0,length(f));
 % beq = zeros(0,1);
 % [L_G,p] = chol((G+G')/2,'lower');
 % Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
 % opt = mpcActiveSetOptions;
 % opt.UseHessianAsInput = false;
 % iA0 = false(size(c));
-% for k = 1:t
-%     [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,F*xk(:,k),L,c+W*xk(:,k),Aeq,beq,iA0,opt);
+% for k = 2:t
+%     [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,f,L,c+W*xk(:,k),Aeq,beq,iA0,opt);
 %     uk(:,k) = Uk(1:nu);
 %     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
 %     yk(:,k+1) = C*xk(:,k);
 %     v = [uk(:,k) ; zeros(2*(N-1),1)];
-%     c = c+S*v; % update c to new constraints
-%     %     % Update cost function as well ???
+%     c = c+S*v; 
+%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
 % end
 % 
 % figure()
