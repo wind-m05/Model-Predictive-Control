@@ -8,19 +8,32 @@ u0 = [0.3792;
       0.0203];
 y0 = [10;0];
 
-% Reference
-ref = zeros(2,t+2*N);
-for i = 1:width(ref)
-    if(i<201)
-        ref(1,i) = 10;
+ref = zeros(2*(t+N),1);
+k = 0;
+for i = 1:2:length(ref)
+    if(k<100)
+        ref(i) = 10;
+        ref(i+1) = 0;
+    elseif(k<200)
+        ref(i) = 10;
+        ref(i+1) = 5;
     else
-        ref(1,i) = 8;
+        ref(i) = 8;
+        ref(i+1) = 5;
     end
-    if(i<101)
-        ref(2,i) = 0;
-    else
-        ref(2,i) = 5;
-    end
+    k = k+1;
+end
+ref1 = zeros((t+N),1);
+k = 0;
+for i = 1:2:length(ref)
+    k = k+1;
+    ref1(k) = ref(i);
+end
+ref2 = zeros((t+N),1);
+k = 0;
+for i = 1:2:length(ref)
+    k = k+1;
+    ref2(k) = ref(i+1);
 end
 
 % ref = zeros(2,t+N);
