@@ -9,13 +9,26 @@ u0 = [0.3792;
 y0 = [10;0];
 
 % Reference
+ref = zeros(2,t+2*N);
+for i = 1:width(ref)
+    if(i<201)
+        ref(1,i) = 10;
+    else
+        ref(1,i) = 8;
+    end
+    if(i<101)
+        ref(2,i) = 0;
+    else
+        ref(2,i) = 5;
+    end
+end
 
-ref = zeros(2,t+N);
-ref(1,1:200) = 10;
-ref(1,201:end) = 8;
-ref(2,1:100) = 0;
-ref(2,101:end) = 5;
-ref = reshape(ref,2*(t+N),1);
+% ref = zeros(2,t+N);
+% ref(1,1:200) = 10;
+% ref(1,201:end) = 8;
+% ref(2,1:100) = 0;
+% ref(2,101:end) = 5;
+% ref = reshape(ref,2*(t+N),1);
 
 % Predicted states bounds
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
@@ -66,12 +79,22 @@ xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
 yk(:,2) = C*xk(:,1);
 v = [u0 ; zeros(2*(N-1),1)];
 G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*ref(1:2*N)-T'*psi*v);
+Rk = double.empty;
+for i = 0:(N-1)
+    Rk = [Rk; ref(1,1+i)];
+    Rk = [Rk; ref(2,1+i)];
+end
+F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
 M = zeros(size(B,2),2*N);
 M(1:size(B,2),1:size(B,2)) = eye(size(B,2));
 
 for k = 1:t
-    uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*ref(k:(k-1)+(2*N))-T'*psi*v); 
+    Rk = double.empty;
+    for i = 0:(N-1)
+        Rk = [Rk; ref(1,1+i)];
+        Rk = [Rk; ref(2,1+i)];
+    end
+    uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
     v = [uk(:,k) ; zeros(2*(N-1),1)];
@@ -127,18 +150,18 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$\tau$','Interpreter','latex');
 sgtitle('Inputs')
 
-ref = reshape(ref,[2,t+N]);
-figure()
-subplot(1,2,1)
-stairs(0:t-1+N,ref(1,:)')
-xlabel('$k$','Interpreter','latex');
-ylabel('$v ref$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t-1+N,ref(2,:)')
-xlabel('$k$','Interpreter','latex');
-ylabel('$h ref$','Interpreter','latex');
-sgtitle('reference')
+% ref = reshape(ref,[2,t+N]);
+% figure()
+% subplot(1,2,1)
+% stairs(0:t-1+N,ref(1,:)')
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$v ref$','Interpreter','latex');
+% 
+% subplot(1,2,2)
+% stairs(0:t-1+N,ref(2,:)')
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$h ref$','Interpreter','latex');
+% sgtitle('reference')
 
 
  
