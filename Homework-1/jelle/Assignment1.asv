@@ -1,4 +1,4 @@
-% Model predictive control Homework assingment 1
+% Model predictive control Homework assignment 1
 % Jelle Cruijsen & Michiel Wind
 close all;
 clear all;
@@ -82,29 +82,29 @@ T(2:nT+1:end) = -1;
 
 %% Question 4.2 (design a model predictive controller)
 k_sim = t;
-%% unconstrained
-% uk = [u0 zeros(m,t)];
-% xk = [x0 A*x0+B*u0 zeros(n,t)];
-% yk = [y0 C*xk(:,2) zeros(p,t-1)];
-% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-% i = 0;
-% for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
-%     i = i+2;                      %used for indexing due to reference being twice as long;
-%     Rk = ref((i+1):(i+p*N));
-%     v = [uk(:,k-1); zeros(2*(N-1),1)];
-%     Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-%     uk(:,k) = Uk(1:m);
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-%     yk(:,k) = C*xk(:,k);
-% end
+% unconstrained
+uk = [u0 zeros(m,t)];
+xk = [x0 A*x0+B*u0 zeros(n,t)];
+yk = [y0 C*xk(:,2) zeros(p,t-1)];
+G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+i = 0;
+for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
+    i = i+2;                      %used for indexing due to reference being twice as long;
+    Rk = ref((i+1):(i+p*N));
+    v = [uk(:,k-1); zeros(2*(N-1),1)];
+    Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+    uk(:,k) = Uk(1:m);
+    xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+    yk(:,k) = C*xk(:,k);
+end
+x_unconstrained = xk;
 %% constrained
-%[Ccal, Dcal, Ecal, Mcal] = caligraphicMatrices(umin,umax,xmin,xmax,N,n,m);  %no delta u and y constraints
 [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m);  
 uk = [u0 zeros(m,t)];
 xk = [x0 A*x0+B*u0 zeros(n,t)];
 yk = [y0 C*xk(:,2) zeros(p,t-1)];
 H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-%L = Mcal*gamma + Ecal+Ebar*T;  %no delta u and y constraints
+L = Mcal*gamma + Ecal;  %no delta u and y constraints
 L = Mcal*gamma + Ecal+Ebar*T;
 W = -Dcal-Mcal*phi;
 i = 0;
@@ -113,7 +113,7 @@ for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
     Rk = ref((i+1):(i+p*N));
     v = [uk(:,k-1); zeros(2*(N-1),1)];
     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-    %[Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k),[],[],[],[],[],[]);  %no delta u and y constraints
+%     [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k),[],[],[],[],[],[]);  %no delta u and y constraints
     [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k)+Ebar*v,[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
@@ -127,33 +127,38 @@ for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
     yk(:,k) = C*xk(:,k);
 end
 
-% Version without delta constraints
-% %[Ccal, Dcal, Ecal, Mcal] = caligraphicMatrices(umin,umax,xmin,xmax,N,n,m);  %no delta u and y constraints
+% %% 2. mpcActiveSetSolver
+% [Ccal, Dcal, Ecal, Mcal] = caligraphicMatrices(umin,umax,xmin,xmax,N,n,m);  %no delta u and y constraints
 % [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m);  
 % uk = [u0 zeros(m,t)];
-% xk = [x0 A*x0+B*u0 zeros(n,t)];
-% yk = [y0 C*xk(:,2) zeros(p,t-1)];
-% H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-% L = Mcal*gamma + Ecal;
+% xk_as = [x0 A*x0+B*u0 zeros(n,t)];
+% yk = [y0 C*xk_as(:,2) zeros(p,t-1)];
+% v = [uk(:,1); zeros(2*(N-1),1)];
+% Rk = ref((2+1):(2+p*N));
+% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% f = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
+% Aeq = zeros(0,length(f));
+% beq = zeros(0,1);
+% [L_G,p_chol] = chol((G+G')/2,'lower');
+% Linv = linsolve(L_G,eye(size(L_G)),struct('LT',true));
+% opt = mpcActiveSetOptions;
+% opt.UseHessianAsInput = false;
+% iA0 = false(size(Ccal));
+% i=0;
+% L = Mcal*gamma + Ecal+Ebar*T;
 % W = -Dcal-Mcal*phi;
-% i = 0;
-% for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
+% for k = 2:(k_sim+1)
 %     i = i+2;                      %used for indexing due to reference being twice as long;
 %     Rk = ref((i+1):(i+p*N));
 %     v = [uk(:,k-1); zeros(2*(N-1),1)];
-%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-%     [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k),[],[],[],[],[],[]);
-%     if exitflag ~= 1
-%         warning('exitflag quadprog = %d\n', exitflag)
-%         if exitflag == -2
-%             sprintf('Optimization problem is infeasible.')
-%             break;                %optimization failed, break loop then plot results
-%         end
-%     end
+%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk_as(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+%     [Uk,exitflag,iA0,lambda] = mpcActiveSetSolver(Linv,f,L,Ccal+W*xk_as(:,k)+Ebar*v,Aeq,beq,iA0,opt);
+% %     [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k)+Ebar*v,[],[],[],[],[],[]);
 %     uk(:,k) = Uk(1:m);
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     xk_as(:,k+1) = A*xk(:,k)+B*uk(:,k);
 %     yk(:,k) = C*xk(:,k);
 % end
+
 
 %% plotting
 figure()
@@ -216,3 +221,67 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$h ref$','Interpreter','latex');
 sgtitle('reference');
 ylim([min(ref2)-1 max(ref2)+1]);
+
+%% Comparison quadprog/active set solver
+
+% figure()
+% subplot(2,2,1)
+% stairs(0:t,xk(1,1:length(xk)-1))
+% hold on
+% stairs(0:t,xk_as(1,1:length(xk_as)-1))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$v [ft/sec]$','Interpreter','latex');
+% 
+% subplot(2,2,2)
+% stairs(0:t,xk(2,1:length(xk)-1))
+% hold on
+% stairs(0:t,xk_as(2,1:length(xk_as)-1))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$w [ft/sec]$','Interpreter','latex');
+% 
+% subplot(2,2,3)
+% stairs(0:t,xk(3,1:length(xk)-1))
+% hold on
+% stairs(0:t,xk_as(3,1:length(xk_as)-1))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$q [ft/sec]$','Interpreter','latex');
+% 
+% subplot(2,2,4)
+% stairs(0:t,xk(4,1:length(xk)-1))
+% hold on
+% stairs(0:t,xk_as(4,1:length(xk_as)-1))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$\theta [rad/sec]$','Interpreter','latex');
+% sgtitle('States')
+
+%% Comparison constrained/unconstrained
+
+figure()
+subplot(2,2,1)
+stairs(0:t,x_unconstrained(1,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(1,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+legend('','')
+subplot(2,2,2)
+stairs(0:t,x_unconstrained(2,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(2,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$w [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,3)
+stairs(0:t,x_unconstrained(3,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(3,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$q [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,4)
+stairs(0:t,x_unconstrained(4,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(4,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\theta [rad/sec]$','Interpreter','latex');
+sgtitle('States')

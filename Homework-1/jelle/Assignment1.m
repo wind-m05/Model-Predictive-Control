@@ -1,4 +1,4 @@
-% Model predictive control Homework assingment 1
+% Model predictive control Homework assignment 1
 % Jelle Cruijsen & Michiel Wind
 close all;
 clear all;
@@ -68,8 +68,8 @@ ymax = 15;
 dumin = [-15; -15];
 dumax = [15; 15];
 
-Q = 10000*eye(p);
-R = 0.0001*eye(m);
+Q = 10*eye(p);
+R = 0.1*eye(m);
 
 [phi, gamma] = predictionModel(A,B,N,n,m);
 omega = kron(eye(N),Q);       % Kronecker product
@@ -97,7 +97,7 @@ for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k) = C*xk(:,k);
 end
-
+x_unconstrained = xk;
 %% constrained
 [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m);  
 uk = [u0 zeros(m,t)];
@@ -253,3 +253,35 @@ ylim([min(ref2)-1 max(ref2)+1]);
 % xlabel('$k$','Interpreter','latex');
 % ylabel('$\theta [rad/sec]$','Interpreter','latex');
 % sgtitle('States')
+
+%% Comparison constrained/unconstrained
+
+figure()
+subplot(2,2,1)
+stairs(0:t,x_unconstrained(1,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(1,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+legend('unconstrained','constrained')
+subplot(2,2,2)
+stairs(0:t,x_unconstrained(2,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(2,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$w [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,3)
+stairs(0:t,x_unconstrained(3,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(3,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$q [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,4)
+stairs(0:t,x_unconstrained(4,1:length(x_unconstrained)-1))
+hold on
+stairs(0:t,xk(4,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\theta [rad/sec]$','Interpreter','latex');
+sgtitle('States')
