@@ -32,7 +32,7 @@ constr.deltainputub =  [15;15];
 [nx,nu] = size(B);
 ny = size(C,1);
 Q = 1000*eye(ny);
-    R = 0.00001*eye(nu);
+    R = 0.0001*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
 T(2:n+1:end) = -1;
@@ -79,11 +79,13 @@ xk = [x0 A*x0+B*u0 zeros(nx,t)];
 yk = [y0 C*xk(:,2) zeros(ny,t)];
 v = [u0 ; zeros(2*(N-1),1)];
 H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
 i = 0;
 for k = 2:t
     i = i+2; 
-    [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
+    Rk = ref((i+1):(i+ny*N));
+    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+    d = c + S*v;
+    [Uk,fval,exitflag] = quadprog(H,f,L,d+W*xk(:,k),[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
         if exitflag == -2
@@ -94,8 +96,7 @@ for k = 2:t
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
     v = [uk(:,k-1) ; zeros(2*(N-1),1)];
-    d = c + S*v; 
-    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref((i+1):(i+ny*N))-2*T'*psi*v);
+    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
 end
 
 figure()
