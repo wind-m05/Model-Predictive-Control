@@ -31,8 +31,8 @@ constr.deltainputub =  [15;15];
 [A,B,C,D,sys] = modelselect('aircraft','discrete',Ts);
 [nx,nu] = size(B);
 ny = size(C,1);
-Q = 1000*eye(ny);
-    R = 0.00001*eye(nu);
+Q = 10*eye(ny);
+    R = 0.1*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
 T(2:n+1:end) = -1;
@@ -80,9 +80,7 @@ yk = [y0 C*xk(:,2) zeros(ny,t)];
 v = [u0 ; zeros(2*(N-1),1)];
 H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
 f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(1:2*N)-2*T'*psi*v);
-i = 0;
 for k = 2:t
-    i = i+2; 
     [Uk,fval,exitflag] = quadprog(H,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
@@ -94,8 +92,8 @@ for k = 2:t
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
     v = [uk(:,k-1) ; zeros(2*(N-1),1)];
-    d = c + S*v; 
-    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref((i+1):(i+ny*N))-2*T'*psi*v);
+    d = c+ S*v; 
+    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(k:(k-1)+(2*N))-2*T'*psi*v);
 end
 
 figure()
