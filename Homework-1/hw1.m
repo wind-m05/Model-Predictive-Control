@@ -1,4 +1,4 @@
-clear all, close all, clc
+% clear all, close all, clc
 %% Simulation parameters
 t = 300; 
 Ts = 0.1;
@@ -13,6 +13,7 @@ ref(1,1:200) = 10;
 ref(1,201:end) = 8;
 ref(2,1:100) = 0;
 ref(2,101:end) = 5;
+ref_test = ref;
 ref = reshape(ref,2*(t+N),1);
 %%
 % Predicted states bounds
@@ -24,15 +25,15 @@ constr.terminalstatelb = [-25;-25;-pi/20;-pi/2;-15]; % Change if needed after mo
 constr.terminalstateub = [25;25;pi/20;pi/2;15];
 constr.inputlb = [-20;-20];
 constr.inputub =  [20;20];
-constr.deltainputlb = [-15;-15];
-constr.deltainputub =  [15;15];
+constr.deltainputlb = [-5;-5];
+constr.deltainputub =  [5;5];
 
 % Model
 [A,B,C,D,sys] = modelselect('aircraft','discrete',Ts);
 [nx,nu] = size(B);
 ny = size(C,1);
-Q = 1000*eye(ny);
-    R = 0.0001*eye(nu);
+Q = 10*eye(ny);
+    R = 0.1*eye(nu);
 T = diag(ones(N*nu,1));
 n = size(T,1);
 T(2:n+1:end) = -1;
@@ -70,7 +71,7 @@ for k = 2:(t+1)
     v = [uk(:,k-1); zeros(2*(N-1),1)];
     uk(:,k) = -M*inv(G)*2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-    yk(:,k+1) = C*xk(:,k);
+    yk(:,k) = C*xk(:,k);
 end
 
 %% quadprog
@@ -85,6 +86,7 @@ for k = 2:t
     Rk = ref((i+1):(i+ny*N));
     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
     d = c + S*v;
+    v = [uk(:,k-1) ; zeros(2*(N-1),1)];
     [Uk,fval,exitflag] = quadprog(H,f,L,d+W*xk(:,k),[],[],[],[],[],[]);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
@@ -94,9 +96,7 @@ for k = 2:t
     end
     uk(:,k) = Uk(1:nu);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-    yk(:,k+1) = C*xk(:,k);
-    v = [uk(:,k-1) ; zeros(2*(N-1),1)];
-    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+    yk(:,k) = C*xk(:,k);
 end
 
 figure()
