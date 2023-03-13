@@ -40,17 +40,17 @@ dumax = [15; 15];
 
 % Performance
 Q = 10*eye(p);
-R = 0.1*eye(m);
+R = 0.00001*eye(m);
 
 [phi, gamma] = predictionModel(A,B,N,n,m);
 omega = kron(eye(N),Q);       % Kronecker product
 psi = kron(eye(N),R);
 C_bar = kron(eye(N),C);
 
-T = diag(ones(N*m,1)); % Delta matrix to handle delta constraints
-nT = size(T,1);
-T(2:nT+1:end) = -1;
-
+% T = diag(ones(N*m,1)); % Delta matrix to handle delta constraints
+% nT = size(T,1);
+% T(2:nT+1:end) = -1;
+T = T_delta(N,m);
 %% unconstrained MPC
 % constraint = 'unconstrained';           %changes plot title
 % uk = [u0 zeros(m,t)];
