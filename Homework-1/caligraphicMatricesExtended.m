@@ -1,4 +1,4 @@
-function [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m)
+function [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m)
     Ccal = double.empty;
     for i = 0:(N-1)
         b = [-umin; umax; -xmin; xmax; -ymin; ymax; -dumin; dumax];
@@ -24,9 +24,9 @@ function [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesExtended(umin,umax,xmin,x
     Ecal = [Ecal; zeros(n*2+2,width(Ecal))];
 
     Ebar = double.empty;
-    E_i = [zeros(2*n,m); zeros(6,m); eye(m); -eye(m); ];
+    E_i = [zeros(2*n,m); zeros(6,m); -eye(m); eye(m)];
     for i = 0:(N-1)
         Ebar = blkdiag(Ebar, E_i);
     end
-    Ebar = [Ebar; zeros(n*2+2,width(Ebar))];
+    Ebar = [Ebar; zeros(height(xmax)+height(xmin)+height(ymax)+height(ymin),width(Ebar))];
 end

@@ -5,3 +5,4 @@ function [W,L,c,S] = getWLcS(constr,N,B,gamma,phi,T)
 W = -D-M*phi;
 L = M*gamma+E+S*T;
 end
+
