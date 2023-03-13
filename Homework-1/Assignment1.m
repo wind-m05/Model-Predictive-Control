@@ -40,7 +40,7 @@ dumax = [15; 15];
 
 % Performance
 Q = 10*eye(p);
-R = 0.00001*eye(m);
+R = 0.1*eye(m);
 
 [phi, gamma] = predictionModel(A,B,N,n,m);
 omega = kron(eye(N),Q);       % Kronecker product
@@ -51,52 +51,53 @@ C_bar = kron(eye(N),C);
 % nT = size(T,1);
 % T(2:nT+1:end) = -1;
 T = T_delta(N,m);
-%% unconstrained MPC
-% constraint = 'unconstrained';           %changes plot title
-% uk = [u0 zeros(m,t)];
-% xk = [x0 A*x0+B*u0 zeros(n,t-1)];
-% yk = [y0 C*xk(:,2) zeros(p,t-1)];
-% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-% i = 0;
-% for k = 2:t              % time starts at k = 0, xk is known for k = 1
-%     i = i+2;             % used for indexing due to reference being twice as long;
-%     Rk = ref((i+1):(i+p*N));
-%     v = [uk(:,k-1); zeros(2*(N-1),1)];
-%     Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-%     uk(:,k) = Uk(1:m);
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-%     yk(:,k+1) = C*xk(:,k+1);
-% end
 
-%% constrained MPC Quadprog
-constraint = 'constrained';    
-[Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m);
-% [D,M,E,S,c] = DMESc_constraints(constr,N,B);
-% Mcal = M;
+%% unconstrained MPC
+constraint = 'unconstrained';           %changes plot title
 uk = [u0 zeros(m,t)];
 xk = [x0 A*x0+B*u0 zeros(n,t-1)];
 yk = [y0 C*xk(:,2) zeros(p,t-1)];
-H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-L = Mcal*gamma + Ecal+Ebar*T;
-W = -Dcal-Mcal*phi;
+G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
 i = 0;
-for k = 2:t              %time starts at k = 0, xk is known for k = 1
-    i = i+2;                      %used for indexing due to reference being twice as long;
+for k = 2:t              % time starts at k = 0, xk is known for k = 1
+    i = i+2;             % used for indexing due to reference being twice as long;
     Rk = ref((i+1):(i+p*N));
     v = [uk(:,k-1); zeros(2*(N-1),1)];
-    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-    [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k)+Ebar*v,[],[],[],[],[],[]);
-    if exitflag ~= 1
-        warning('exitflag quadprog = %d\n', exitflag)
-        if exitflag == -2
-            sprintf('Optimization problem is infeasible.')
-            break;  %optimization failed, break loop then plot results
-        end
-    end
+    Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
     uk(:,k) = Uk(1:m);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k+1);
 end
+
+%% constrained MPC Quadprog
+% constraint = 'constrained';    
+% [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,xmin,xmax,ymin,ymax,dumin,dumax,N,p,n,m);
+% % [D,M,E,S,c] = DMESc_constraints(constr,N,B);
+% % Mcal = M;
+% uk = [u0 zeros(m,t)];
+% xk = [x0 A*x0+B*u0 zeros(n,t-1)];
+% yk = [y0 C*xk(:,2) zeros(p,t-1)];
+% H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% L = Mcal*gamma + Ecal+Ebar*T;
+% W = -Dcal-Mcal*phi;
+% i = 0;
+% for k = 2:t              %time starts at k = 0, xk is known for k = 1
+%     i = i+2;                      %used for indexing due to reference being twice as long;
+%     Rk = ref((i+1):(i+p*N));
+%     v = [uk(:,k-1); zeros(2*(N-1),1)];
+%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+%     [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k)+Ebar*v,[],[],[],[],[],[]);
+%     if exitflag ~= 1
+%         warning('exitflag quadprog = %d\n', exitflag)
+%         if exitflag == -2
+%             sprintf('Optimization problem is infeasible.')
+%             break;  %optimization failed, break loop then plot results
+%         end
+%     end
+%     uk(:,k) = Uk(1:m);
+%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     yk(:,k+1) = C*xk(:,k+1);
+% end
 
 %% Constrained MPC active set solver
 % nu = m;
