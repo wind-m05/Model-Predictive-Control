@@ -54,6 +54,7 @@ catch ME
 end
 
 % (c) LMI
+yalmip('clear')
 O = sdpvar(nx,nx);
 Y = sdpvar(nu,nx);
 Con1 = [O, (A*O+B*Y)', O, Y';
@@ -73,8 +74,9 @@ end
 Pc = value(O)^-1;
 Kc = value(Y)*value(O)^-1;
 
-% (d) Closed-loop trajectory
+%% (d) Closed-loop trajectory
 % In addition, you can check if J is strictly decreasing
+close all
 P = Pc; % Pa, Pb, Pc
 N = 100;
 [Phi, Gamma] = ABN2PhiGamma(A,B,N);
